@@ -81,8 +81,7 @@ Tokyo Institute of Technology, Japan \\
   $y\in\{-1,0,1\}$ indicates which element of the pair is better, or
   if there is no significant difference. We cast the learning problem
   as a margin maximization, and show that it can be solved by
-  converting it to a standard SVM. We compare our algorithm to SVMrank
-  using a benchmark ranking data set.
+  converting it to a standard SVM.
 \end{abstract}
 
 \section{Introduction}
@@ -100,11 +99,13 @@ label $y_i\in\{-1,0,1\}$ that indicates which element is better:
     1 & \text{ if $x'_i$ is better than $x_i$}.
   \end{cases}
 \end{equation}
-These data are geometrically represented by segments and arrows in the
-top panel of Figure~\ref{fig:geometry}. Comparison data naturally
-arise when considering subjective human evaluations of pairs of
-items. For example, movies, graph layouts, and web
-search results. TODO.
+Comparison data naturally arise when considering subjective human
+evaluations of pairs of items. For example, if I were to compare some
+pairs of movies I have watched, I would say \textit{Les Mis\'erables}
+is better than \textit{Star Wars}, and \textit{The Empire Strikes
+  Back} is as good as \textit{Star Wars}. Features $x_i,x_i'$ of the
+movies can be length in minutes, year of theatrical release,
+indicators for genre, actors, etc.
 
 The goal of learning is to find a comparison function $c:\RR^p \times
 \RR^p \rightarrow \{-1,0,1\}$ which generalizes to a test set of data:
@@ -113,24 +114,13 @@ The goal of learning is to find a comparison function $c:\RR^p \times
   \sum_{i=1}^n
   e\left[ c(x_i, x_i'), y_i \right],
 \end{equation}
-where $e(\hat y, y) = 1_{\hat y \neq y}$ is the zero-one loss.
-
-This is similar to a ranking problem, for which a number of machine
-learning algorithms exist \citep{learning-to-rank}, such as SVMrank
-\citep{ranksvm}. There are two key differences between ranking and
-comparing:
-\begin{itemize}
-\item Ranking algorithms ignore the $y_i=0$ equality pairs.
-\item The goal of ranking is to give an absolute order to a set of
-  items, typically documents in a search engine. Comparison is simpler
-  since we only need to make a decision about exactly two items.
-\end{itemize}
+where $e(\hat y, y) = I(\hat y \neq y)$ is the zero-one loss.
 
 The rest of this article is organized as follows. In
 Section~\ref{sec:related} we discuss links with related work on
 classification and ranking, then in Section~\ref{sec:svm-compare} we
-propose a new algorithm: \proc{SVMcompare}. We show results on a benchmark
-dataset in Section~\ref{sec:results} and discuss future work in
+propose a new algorithm for comparison. We show results on some toy
+data in Section~\ref{sec:results} and discuss future work in
 Section~\ref{sec:conclusions}.
 
 \section{Related work}
@@ -138,12 +128,8 @@ Section~\ref{sec:conclusions}.
 
 First we discuss connections with several existing methods in the
 machine learning literature, and then we discuss how ranking
-algorithms can be applied to the comparison problem.
-
-When the inputs are discrete $x_i,x_i'\in\{1,\dots,k\}$, then the
-problem is known as learning a relation \citep{relations}. In this
-article we only consider the case when inputs are continuous
-$x_i,x_i'\in\RR^p$.
+algorithms can be applied to the comparison problem. A summary of
+related work appears in Table~\ref{tab:related}.
 
 \begin{table}[b!]
   \centering
@@ -152,26 +138,36 @@ $x_i,x_i'\in\RR^p$.
     \backslashbox{Outputs}{Inputs}
     &single items $x$&pairs $x,x'$\\ \hline
     $y\in\{-1,1\}$ &SVM  & SVMrank   	\\ \hline 
-    $y\in\{-1,0,1\}$ &Reject option& this work\\ \hline
+    $y\in\{-1,0,1\}$ &SVM with reject option& this work\\ \hline
   \end{tabular}
-  \caption{\label{tab:related} Comparison is similar to ranking 
+  \caption{\label{tab:related} Summary of related max-margin learning methods. 
+    Comparison is similar to ranking 
     and classification with reject option.}
 \end{table}
 
-\subsection{Rank, reject, and rate}
+\citet{reject-option} studied the statistical properties of a hinge
+loss for an extension of SVM where the outputs $y\in\{-1,0,1\}$, where
+0 signifies ``rejection'' or ``no guess,'' calling this the
+``classification with reject option'' problem.
 
-Some related work appears in Table~\ref{tab:related}:
+There are many algorithms for the supervised learning to rank problem
+\citep{learning-to-rank}, which is similar to the supervised
+comparison problem we consider in this paper. The main idea of
+learning to rank is to train on labeled pairs of possible documents
+$x_i,x_i'$ for the same search query. The labels are $y_i\in\{-1,1\}$,
+where $y_i=1$ means document $x_i'$ is more relevant than $x_i$ and
+$y_i=-1$ means the opposite. \citet{ranksvm} proposed the SVMrank
+algorithm for this problem, and the algorithm we propose here is very
+similar. The difference is that we also consider the case where both
+possible items/documents are judged to be equally good ($y_i=0$).
+\citet{rank-with-ties} proposed a boosting algorithm for this ranking
+with ties problem, and observed that ties are more effective when
+there are more output values.
 
-\begin{itemize}
-\item \citet{reject-option} studied the statistical properties of the
-  hinge loss for the classification with reject option.
-\item \citet{ranksvm} proposed SVM for ranking.
-\item \citet{rank-with-ties} proposed a boosting algorithm for ranking
-  with ties, and observed that ties are more effective when there are
-  more output values.
-\item \citet{trueskill} proposed TrueSkill: a Bayesian skill rating
-  system, a generalization of the Elo chess rating system.
-\end{itemize}
+\citet{trueskill} proposed TrueSkill, a generalization of the Elo
+chess rating system which can be applied to comparison data. However,
+neither TrueSkill nor SVMrank can predict ties ($y_i=0$), which is
+what motivates us to propose a new algorithm.
 
 % \begin{figure}
 %   \centering
@@ -191,55 +187,55 @@ Some related work appears in Table~\ref{tab:related}:
 %   \label{fig:geometry}
 % \end{figure}
 
-\subsection{SVMrank for comparing}
+% \subsection{SVMrank for comparing}
 
-In this section we explain how to apply the existing SVMrank algorithm
-of \citet{ranksvm} to a comparison data set.
+% In this section we explain how to apply the existing SVMrank algorithm
+% of \citet{ranksvm} to a comparison data set.
 
-The goal of the SVMrank algorithm is to learn a ranking function
-$r:\RR^p \rightarrow \RR$. When $r(x)=w^\intercal x$ is linear, the
-primal problem for some cost parameter $C\in\RR^+$ is the following
-quadratic program (QP):
-\begin{equation}
-  \begin{aligned}
-    \minimize_{w, \xi}\ \  & \frac 1 2 w^\intercal w 
-    + C \sum_{i\in I_1\cup I_{-1}} \xi_i \\
-    \text{subject to}\ \  & 
-    \forall i\in I_1\cup I_{-1},\ \xi_i \geq 0,\\
-&    \text{and }\xi_i \geq 1-w^\intercal(x_i'-x_i)y_i,
-  \end{aligned}
-  \label{eq:svmrank}
-\end{equation}
-where $I_y=\{i\mid y_i=y\}$ are the sets of indices for the different
-labels. Note that the equality pairs $i$ such that $y_i=0$ are not
-used in the optimization problem.
+% The goal of the SVMrank algorithm is to learn a ranking function
+% $r:\RR^p \rightarrow \RR$. When $r(x)=w^\intercal x$ is linear, the
+% primal problem for some cost parameter $C\in\RR^+$ is the following
+% quadratic program (QP):
+% \begin{equation}
+%   \begin{aligned}
+%     \minimize_{w, \xi}\ \  & \frac 1 2 w^\intercal w 
+%     + C \sum_{i\in I_1\cup I_{-1}} \xi_i \\
+%     \text{subject to}\ \  & 
+%     \forall i\in I_1\cup I_{-1},\ \xi_i \geq 0,\\
+% &    \text{and }\xi_i \geq 1-w^\intercal(x_i'-x_i)y_i,
+%   \end{aligned}
+%   \label{eq:svmrank}
+% \end{equation}
+% where $I_y=\{i\mid y_i=y\}$ are the sets of indices for the different
+% labels. Note that the equality pairs $i$ such that $y_i=0$ are not
+% used in the optimization problem.
 
-After obtaining an optimal $w\in\RR^p$ by solving (\ref{eq:svmrank}),
-we define a comparison function $c_t:\RR^p\times \RR^p\rightarrow
-\{-1, 0, 1\}$ for any threshold $t\in\RR^+$:
-\begin{equation}
-  \label{eq:svmrank_c_t}
-  c_t(x, x') =
-  \begin{cases}
-    -1 & \text{ if } w^\intercal(x' - x) < -t, \\
-    0 & \text{ if } |w^\intercal(x' - x)| \leq t, \\
-    1 & \text{ if } w^\intercal(x' - x) > t. \\
-  \end{cases}
-\end{equation}
-We can then use grid search to estimate an optimal threshold $\hat t$,
-by minimizing the zero-one loss with respect to all the training
-pairs:
-\begin{equation}
-  \hat t = \argmin_{t}
-  \sum_{i=1}^n
-  e\left[ c_t(x_i, x_i'), y_i \right].
-\end{equation}
-However, there are two potential problems with the learned comparison
-function $c_{\hat t}$. First, the equality pairs $i\in I_0$ are not
-used to learn the weight vector $w$ in (\ref{eq:svmrank}). Second, the
-threshold $\hat t$ is learned in a separate optimization step, which
-may be suboptimal. In the next section, we propose a new algorithm
-that fixes these potential problems.
+% After obtaining an optimal $w\in\RR^p$ by solving (\ref{eq:svmrank}),
+% we define a comparison function $c_t:\RR^p\times \RR^p\rightarrow
+% \{-1, 0, 1\}$ for any threshold $t\in\RR^+$:
+% \begin{equation}
+%   \label{eq:svmrank_c_t}
+%   c_t(x, x') =
+%   \begin{cases}
+%     -1 & \text{ if } w^\intercal(x' - x) < -t, \\
+%     0 & \text{ if } |w^\intercal(x' - x)| \leq t, \\
+%     1 & \text{ if } w^\intercal(x' - x) > t. \\
+%   \end{cases}
+% \end{equation}
+% We can then use grid search to estimate an optimal threshold $\hat t$,
+% by minimizing the zero-one loss with respect to all the training
+% pairs:
+% \begin{equation}
+%   \hat t = \argmin_{t}
+%   \sum_{i=1}^n
+%   e\left[ c_t(x_i, x_i'), y_i \right].
+% \end{equation}
+% However, there are two potential problems with the learned comparison
+% function $c_{\hat t}$. First, the equality pairs $i\in I_0$ are not
+% used to learn the weight vector $w$ in (\ref{eq:svmrank}). Second, the
+% threshold $\hat t$ is learned in a separate optimization step, which
+% may be suboptimal. In the next section, we propose a new algorithm
+% that fixes these potential problems.
 
 \section{Support vector comparison machines}
 \label{sec:svm-compare}
@@ -260,32 +256,17 @@ ranking function $r(x)=w^\intercal x$ that maximizes the margin $\mu$:
 \begin{equation}
   \label{eq:max-margin-lp}
   \begin{aligned}
-    \maximize_{\mu\in\RR^+, w\in\RR^p}\ & \mu \\
+    \maximize_{\mu\in\RR, w\in\RR^p}\ & \mu \\
     \text{subject to}\ & \mu \leq 1-|w^\intercal (x_i' - x_i)|,\
     \forall\  i\in I_0,\\
     &\mu \leq -1 +  w^\intercal(x_i'-x_i)y_i,\ \forall\ i\in I_1\cup I_{-1}.
   \end{aligned}
 \end{equation}
-Note that finding a feasible point for this LP is a test of linear
-separability. If there are no feasible points then the data are not
-linearly separable. The geometric interpretation of the LP margin is
-shown in the left panel of Figure~\ref{fig:hard-margin}. It is the
-distance from any difference vector $x_i'-x_i$ to its nearest decision
-boundary $r(x)\in\{-1,1\}$.
-
-\begin{figure*}
-  \centering
-  \input{figure-hard-margin}
-  \vskip -0.5cm
-  \caption{The separable LP and QP comparison problems. \textbf{Left}:
-    the difference vectors $x'-x$ of the original data and the optimal
-    solution to the LP (\ref{eq:max-margin-lp}). \textbf{Middle}: for
-    the unscaled flipped data $\tilde x'-\tilde x$ (\ref{eq:tilde}),
-    the LP is not the same as the QP
-    (\ref{eq:max-margin-qp}). \textbf{Right}: for the scaled flipped
-    data, the QP is equivalent to the LP.}
-  \label{fig:hard-margin}
-\end{figure*}
+Note that solving this LP is a test of linear separability. If the
+optimal $\mu>0$ then the data are linearly separable. The geometric
+interpretation of the LP margin is shown in the left panel of
+Figure~\ref{fig:hard-margin}. It is the distance from any difference
+vector $x_i'-x_i$ to its nearest decision boundary $r(x)\in\{-1,1\}$.
 
 Another way to formulate the comparison problem is by first performing
 a change of variables, and then learning a binary SVM. The idea is to
@@ -336,45 +317,6 @@ $f(x)=\beta+u^\intercal x$ using binary SVM:
     \ \forall i\in\{1,\dots,m\}.
   \end{aligned}
 \end{equation}
-In the next Lemma, we use this QP
-% (\ref{eq:max-margin-qp-tilde}) 
-to
-construct a ranking function $\hat r(x)= \hat w^\intercal x$ that is
-feasible for the original LP (\ref{eq:max-margin-lp}).
-\begin{lemma}
-  Let $u\in\RR^p,\beta\in\RR$ be a solution of
-  (\ref{eq:max-margin-qp-tilde}). Then $\hat \mu = -1/\beta$
-  and $\hat w = -u/\beta$ are feasible for
-  (\ref{eq:max-margin-lp}).
-  \label{lemma:feasible}
-\end{lemma}
-\begin{proof}
-  Begin by assuming that we want to find a ranking function $r(x)=\hat
-  w^\intercal x = \gamma u^\intercal x$, where $\gamma\in\RR$ is a
-  scaling constant.  Then consider that for all $x$ on the decision
-  boundary, we have the following two equalities
-  \begin{equation}
-    \label{eq:dec-boundary-rank}
-    u
-  \end{equation}
-and TODO
-\begin{equation}
-  \label{eq:max-margin-qp}
-  \begin{aligned}
-    \minimize_{u\in\RR^p, \beta\in\RR}\ & u^\intercal u  \\
-    \text{subject to}\ & \beta + |u^\intercal (x_i'-x_i)| \leq -1,\
-    \forall\  i\in I_0,\\
-    & \beta + u^\intercal(x_i'-x_i)y_i \geq 1,\ \forall\ i\in I_1\cup I_{-1}.
-  \end{aligned}
-\end{equation}
-\end{proof}
-
-% This Lemma is very useful in practice. It means that a comparison
-% ranking function $\hat r$ can be learned by first solving a standard
-% binary SVM and then transforming the solution. However
-
-One may also wonder 
-
 \subsection{Kernelized QP for non-separable data}
 \label{sec:kernelized-qp}
 In this section, we assume the data are not separable, and want to
@@ -388,7 +330,7 @@ $\alpha,\alpha'\in\RR^m$ be coefficients such that $u=\sum_{i=1}^m
 have
 %the learned function is thus
  $f(x) =\beta + \sum_{i=1}^m \alpha_i \kappa(\tilde x_i, x) +
-\alpha_i' \kappa(\tilde x_i', x)$. We then use Lemma~\ref{lemma:feasible} to
+\alpha_i' \kappa(\tilde x_i', x)$. We then 
 define the ranking function
 \begin{equation}
   \label{eq:kernelized_r}
@@ -407,6 +349,20 @@ which implies the comparison function
     1 & \text{if } r(x') - r(x) > 1. \\
   \end{cases}
 \end{equation}
+
+\begin{figure*}
+  \centering
+  \input{figure-hard-margin}
+  \vskip -0.5cm
+  \caption{The separable LP and QP comparison problems. \textbf{Left}:
+    the difference vectors $x'-x$ of the original data and the optimal
+    solution to the LP (\ref{eq:max-margin-lp}). \textbf{Middle}: for
+    the unscaled flipped data $\tilde x'-\tilde x$ (\ref{eq:tilde}),
+    the LP is not the same as the QP
+    (\ref{eq:max-margin-qp}). \textbf{Right}: for the scaled flipped
+    data, the QP is equivalent to the LP.}
+  \label{fig:hard-margin}
+\end{figure*}
 
 Let $K=[K_1\cdots K_m\ K_1'\cdots K_m']\in\RR^{2m\times 2m}$ be the
 kernel matrix, where for all pairs $i\in\{1, \dots, m\}$, the kernel
@@ -505,10 +461,9 @@ $\alpha_i=-\tilde y_i v_i$ and $\alpha_i'=\tilde y_i v_i$ are
 recovered using the stationary condition (\ref{eq:stationarity}). The
 learned comparison function remains the same (\ref{eq:kernelized_c}).
 
-The overall training procedure \proc{SVMcompare} is summarized as
-Algorithm~\ref{alg:SVMcompare}. There are two hyper-parameters to
-tune: the cost $C$ and the kernel $\kappa$. As with standard SVM for
-binary classification, these parameters can be tuned by minimizing the
+The overall training procedure has two hyper-parameters to tune: the
+cost $C$ and the kernel $\kappa$. As with standard SVM for binary
+classification, these parameters can be tuned by minimizing the
 prediction error on a held-out validation set.
 
 % \begin{algorithm}[b!]
@@ -567,10 +522,6 @@ prediction error on a held-out validation set.
 
 \section{Results}
 \label{sec:results}
-
-For evaluation, we propose the zero-one loss function
-$e:\{-1,0,1\}\times\{-1,0,1\}\rightarrow\{0,1\}$, described in
-Table~\ref{tab:evaluation}.
 
 % \begin{table}[b!]
 %   \centering
