@@ -146,7 +146,7 @@ related work appears in Table~\ref{tab:related}.
 \end{table}
 
 \citet{reject-option} studied the statistical properties of a hinge
-loss for an extension of SVM where the outputs $y\in\{-1,0,1\}$, where
+loss for an extension of SVM where $y\in\{-1,0,1\}$, and
 0 signifies ``rejection'' or ``no guess,'' calling this the
 ``classification with reject option'' problem.
 
@@ -240,8 +240,19 @@ what motivates us to propose a new algorithm.
 \section{Support vector comparison machines}
 \label{sec:svm-compare}
 
-In this section we propose \proc{SVMcompare}, a new learning algorithm
-designed for comparison problems.
+In this section we new learning algorithms for comparison problems. In
+all cases, we will first learn a ranking function
+$r:\RR^p\rightarrow\RR$ and then make a prediction with the following
+comparison function
+\begin{equation}
+  \label{eq:kernelized_c}
+  c(x, x') =
+  \begin{cases}
+    -1 & \text{if } r(x') - r(x) < -1, \\
+    0 & \text{if } |r(x') - r(x)| \leq 1, \\
+    1 & \text{if } r(x') - r(x) > 1. \\
+  \end{cases}
+\end{equation}
 
 \subsection{LP and QP for separable data}
 \label{sec:lp-qp}
@@ -267,6 +278,20 @@ optimal $\mu>0$ then the data are linearly separable. The geometric
 interpretation of the LP margin is shown in the left panel of
 Figure~\ref{fig:hard-margin}. It is the distance from any difference
 vector $x_i'-x_i$ to its nearest decision boundary $r(x)\in\{-1,1\}$.
+
+\begin{figure*}[b!]
+  \centering
+  \input{figure-hard-margin}
+  \vskip -0.5cm
+  \caption{The separable LP and QP comparison problems. \textbf{Left}:
+    the difference vectors $x'-x$ of the original data and the optimal
+    solution to the LP (\ref{eq:max-margin-lp}). \textbf{Middle}: for
+    the unscaled flipped data $\tilde x'-\tilde x$ (\ref{eq:tilde}),
+    the LP is not the same as the QP
+    (\ref{eq:max-margin-qp-tilde}). \textbf{Right}: for the scaled flipped
+    data, the QP is equivalent to the LP.}
+  \label{fig:hard-margin}
+\end{figure*}
 
 Another way to formulate the comparison problem is by first performing
 a change of variables, and then learning a binary SVM. The idea is to
@@ -307,16 +332,17 @@ X'\in\RR^{m\times p}$ and $\tilde y\in\{-1,1\}^m$. Note that $\tilde
 y_i=-1$ implies no significant difference between $\tilde x_i$ and
 $\tilde x_i'$, and $\tilde y_i=1$ implies that $\tilde x_i$ is better
 than $\tilde x_i'$. We then learn an affine function
-$f(x)=\beta+u^\intercal x$ using binary SVM:
+$f(x)=\beta+u^\intercal x$ using hard-margin binary SVM
 \begin{equation}
   \label{eq:max-margin-qp-tilde}
   \begin{aligned}
     \minimize_{u\in\RR^p, \beta\in\RR}\ & u^\intercal u  \\
     \text{subject to}\ & 
     \tilde y_i (\beta + u^\intercal( \tilde x_i'-\tilde x_i) ) \geq 1,
-    \ \forall i\in\{1,\dots,m\}.
+    \ \forall i\in\{1,\dots,m\},
   \end{aligned}
 \end{equation}
+and define the learned ranking function as $r(x) = -u^\intercal x/\beta$.
 \subsection{Kernelized QP for non-separable data}
 \label{sec:kernelized-qp}
 In this section, we assume the data are not separable, and want to
@@ -336,59 +362,34 @@ define the ranking function
   \label{eq:kernelized_r}
   r(x)= \frac{u^\intercal \Phi(x)}{-\beta} = \frac{1}{-\beta}
   \sum_{i=1}^m
-    \alpha_i \kappa(\tilde x_i, x) + \alpha_i'  \kappa(\tilde x_i', x) 
-  ,
+    \alpha_i \kappa(\tilde x_i, x) + \alpha_i'  \kappa(\tilde x_i', x).
 \end{equation}
-which implies the comparison function
-\begin{equation}
-  \label{eq:kernelized_c}
-  c(x, x') =
-  \begin{cases}
-    -1 & \text{if } r(x') - r(x) < -1, \\
-    0 & \text{if } |r(x') - r(x)| \leq 1, \\
-    1 & \text{if } r(x') - r(x) > 1. \\
-  \end{cases}
-\end{equation}
-
-\begin{figure*}
-  \centering
-  \input{figure-hard-margin}
-  \vskip -0.5cm
-  \caption{The separable LP and QP comparison problems. \textbf{Left}:
-    the difference vectors $x'-x$ of the original data and the optimal
-    solution to the LP (\ref{eq:max-margin-lp}). \textbf{Middle}: for
-    the unscaled flipped data $\tilde x'-\tilde x$ (\ref{eq:tilde}),
-    the LP is not the same as the QP
-    (\ref{eq:max-margin-qp}). \textbf{Right}: for the scaled flipped
-    data, the QP is equivalent to the LP.}
-  \label{fig:hard-margin}
-\end{figure*}
 
 Let $K=[K_1\cdots K_m\ K_1'\cdots K_m']\in\RR^{2m\times 2m}$ be the
-kernel matrix, where for all pairs $i\in\{1, \dots, m\}$, the kernel
+kernel matrix, where for all $i\in\{1, \dots, m\}$, the kernel
 vectors $K_i,K_i'\in\RR^{2m}$ are defined as
-\begin{equation}
-  K_i = \left[
-    \begin{array}{c}
-      \kappa(\tilde x_1, \tilde x_i)\\
-      \vdots\\
-      \kappa(\tilde x_m, \tilde x_i)\\
-      \kappa(\tilde x_1', \tilde x_i)\\
-      \vdots\\
+\begin{eqnarray}
+  K_i &=& \left[
+    \begin{array}{cccccc}
+      \kappa(\tilde x_1, \tilde x_i)&
+      \cdots&
+      \kappa(\tilde x_m, \tilde x_i)&
+      \kappa(\tilde x_1', \tilde x_i)&
+      \cdots&
       \kappa(\tilde x_m', \tilde x_i)
     \end{array}
-  \right],\ 
-  K_i' = \left[
-    \begin{array}{c}
-      \kappa(\tilde x_1, \tilde x_i')\\
-      \vdots\\
-      \kappa(\tilde x_m, \tilde x_i')\\
-      \kappa(\tilde x_1', \tilde x_i')\\
-      \vdots\\
+  \right]^\intercal \\
+  K_i' &=& \left[
+    \begin{array}{cccccc}
+      \kappa(\tilde x_1, \tilde x_i')&
+      \cdots&
+      \kappa(\tilde x_m, \tilde x_i')&
+      \kappa(\tilde x_1', \tilde x_i')&
+      \cdots&
       \kappa(\tilde x_m', \tilde x_i')
     \end{array}
-  \right].
-\end{equation}
+  \right]^\intercal.
+\end{eqnarray}
 Letting $a=[\alpha^\intercal\
 \alpha'^\intercal]^\intercal\in\RR^{2m}$, the norm of the linear
 function in the feature space is $w^\intercal w = a^\intercal K a$,
