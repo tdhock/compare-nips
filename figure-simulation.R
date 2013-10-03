@@ -42,7 +42,7 @@ for(norm in names(pair.sets)){
   fold <- sample(rep(1:2, l=length(Pairs$yi)))
   is.train <- fold==1
   err.df <- data.frame()
-  Cvals <- 2^seq(-2,2,by=1)
+  Cvals <- 2^seq(-4,4,by=1)
   models <- list()
   kvals <- Cvals
   model.df <- expand.grid(C=Cvals, k.width=kvals)
@@ -50,7 +50,7 @@ for(norm in names(pair.sets)){
     model <- model.df[model.i,]
     Cval <- model$C
     k.width <- model$k.width
-    ker <- rbfdot(k.width)
+    ##ker <- rbfdot(k.width)
     ker <- laplacedot(k.width)
     cat(sprintf("%4d / %4d C=%5.2f k.width=%5.2f\n",
                 model.i, nrow(model.df), Cval, k.width))
@@ -91,14 +91,13 @@ ggplot(err.df)+
 }
 labels <- c(l1="||x||_1^2",
             l2="||x||_2^2",
-            lint="||x||_\\infty^2")
+            linf="||x||_\\infty^2")
+all.ranks$label <- sprintf("$r(x) = %s$", labels[as.character(all.ranks$norm)])
 p <- ggplot(all.ranks, aes(x1, x2, z=rank))+
   geom_contour(aes(linetype=what, group=what), colour="black",
                ##breaks=seq(1,10,by=1))+
                breaks=NULL)+
-  facet_grid(.~norm,labeller=function(var, val){
-    sprintf("$r(x) = %s$", labels[val])
-  })+
+  facet_grid(.~label)+
   theme_bw()+
   theme(panel.margin=unit(0,"cm"))+
   coord_equal()+
