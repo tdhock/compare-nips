@@ -8,5 +8,5 @@ figure-norm-data.tex: figure-norm-data.R tikz.R
 	R --no-save < $<
 figure-hard-margin.tex: figure-hard-margin.R tikz.R
 	R --no-save < $<
-figure-simulation.tex: figure-simulation.R tikz.R
+figure-simulation.tex: figure-simulation.R tikz.R svmlight.R
 	R --no-save < $<
