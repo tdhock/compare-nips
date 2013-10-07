@@ -149,7 +149,6 @@ related work appears in Table~\ref{tab:related}.
 loss for an extension of SVM where $y\in\{-1,0,1\}$, and
 0 signifies ``rejection'' or ``no guess,'' calling this the
 ``classification with reject option'' problem.
-
 There are many algorithms for the supervised learning to rank problem
 \citep{learning-to-rank}, which is similar to the supervised
 comparison problem we consider in this paper. The main idea of
@@ -163,7 +162,6 @@ possible items/documents are judged to be equally good ($y_i=0$).
 \citet{rank-with-ties} proposed a boosting algorithm for this ranking
 with ties problem, and observed that ties are more effective when
 there are more output values.
-
 \citet{trueskill} proposed TrueSkill, a generalization of the Elo
 chess rating system which can be applied to comparison data. However,
 neither TrueSkill nor SVMrank can predict ties ($y_i=0$), which is
@@ -242,11 +240,15 @@ what motivates us to propose a new algorithm.
 
 In this section we new learning algorithms for comparison problems. In
 all cases, we will first learn a ranking function
-$r:\RR^p\rightarrow\RR$ and then make a prediction with the following
-comparison function
+$r:\RR^p\rightarrow\RR$ and then make a prediction with the comparison
+function $c$, defined in terms of the threshold function
+$t:\RR\rightarrow\{-1,0,1\}$:
 \begin{equation}
-  \label{eq:kernelized_c}
+  \label{eq:compare_threshold}
   c(x, x') =
+  t\left[
+    r(x')-r(x)
+  \right]
   \begin{cases}
     -1 & \text{if } r(x') - r(x) < -1, \\
     0 & \text{if } |r(x') - r(x)| \leq 1, \\
@@ -293,11 +295,11 @@ vector $x_i'-x_i$ to its nearest decision boundary $r(x)\in\{-1,1\}$.
   \label{fig:hard-margin}
 \end{figure*}
 
-Another way to formulate the comparison problem is by first performing
-a change of variables, and then learning a binary SVM. The idea is to
+Instead of solving this LP, we can instead perform a change of
+variables, and then solve a QP to learn a binary SVM. The idea is to
 maximize the margin between significant differences $y_i\in\{-1,1\}$
 and equality pairs $y_i=0$. Let $X_y,X_y'$ be the $|I_y|\times p$
-matrices formed by all the pairs $i\in I_y$. We define a new
+matrices formed by all the pairs $i\in I_y$. We define a
 ``flipped'' data set with $m=|I_1|+|I_{-1}|+2|I_0|$ pairs suitable for
 training a binary SVM:
 \begin{equation}
@@ -436,31 +438,16 @@ which is equivalent to the dual problem of a standard binary SVM with
 kernel $\tilde K = M^\intercal K M\in\RR^{m\times m}$ and labels
 $\tilde y=\{-1,1\}^m$.
 
-So we can solve the dual comparison problem (\ref{eq:svm-dual}) using
+So we can solve the dual problem (\ref{eq:svm-dual}) using
 any efficient SVM solver, such as libsvm \citep{libsvm}. We used the R
 interface in the \texttt{kernlab} package of \citet{kernlab}, and our
 code is available in the \texttt{rankSVMcompare} package on Github.
 
 After obtaining optimal dual variables $v\in\RR^m$ as the solution of
 (\ref{eq:svm-dual}), the SVM solver also gives us the optimal bias
-$\beta$ by analyzing the complementary slackness conditions.
-The learned ranking function can be quickly evaluated since the
-optimal $v$ is sparse. Let $\textbf{sv}=\{i: v_i > 0\}$ be the indices
-of the support vectors. Since we need only $2|\textbf{sv}|$ kernel
-evaluations, the ranking function (\ref{eq:kernelized_r}) becomes
-\begin{equation}
-  \label{eq:r_sv}
-  r(x)= 
-  \sum_{i\in \textbf{sv}}
-  \tilde y_i v_i\left[ 
-    \kappa(\tilde x_i, x)
-    - \kappa(\tilde x_i', x)
-  \right]/\beta.
-\end{equation}
-Note that for all $i\in\{1,\dots,m\}$, the optimal primal variables
-$\alpha_i=-\tilde y_i v_i$ and $\alpha_i'=\tilde y_i v_i$ are
-recovered using the stationary condition (\ref{eq:stationarity}). The
-learned comparison function remains the same (\ref{eq:kernelized_c}).
+$\beta$ by analyzing the complementary slackness conditions.  The
+learned ranking function (\ref{eq:kernelized_r}) can be quickly
+evaluated since the optimal $v$ is sparse.
 
 The overall training procedure has two hyper-parameters to tune: the
 cost $C$ and the kernel $\kappa$. As with standard SVM for binary
@@ -524,12 +511,33 @@ prediction error on a held-out validation set.
 \section{Results}
 \label{sec:results}
 
-We did a simulation in Figure~\ref{fig:norms}.
+We used a simulation to compare the proposed comparison model with a
+baseline model, SVMrank \citep{ranksvm}. We generated pairs
+$x_i,x_i'\in[-3,3]^2$ and noisy labels
+$y_i=t[r(x'_i)-r(x_i)+\epsilon_i]$, where $t$ is the threshold
+function (\ref{eq:compare_threshold}), $r$ is the latent ranking
+function, and $\epsilon_i\sim N(0, 1/4)$ is noise. We picked one train
+and one validation set, each with 100 equality pairs ($y_i=0$) and 100
+inequality ($y_i\in\{-1,1\}$) pairs, fitting 90 models to the training
+set ($C=4^{-4},\dots,4^5$, gaussian kernel width
+$\gamma=2^{-7},\dots,2^1$). For the SVMrank model, equality pairs are
+ignored when learning the ranking function, but used to learn a
+threshold via grid search for when to predict $c(x,x')=0$. The model
+with minimal zero-one loss on the validation set is plotted in
+Figure~\ref{fig:norms}. The comparison model is better at recovering
+the underlying ranking function, since it is able to directly learn
+from the equality pairs ($y_i=0$).
 
 \begin{figure}[b!]
   \centering
   \input{figure-simulation}
-  \caption{Application to simulated patterns $x,x'\in\RR^2$.}
+  \caption{Application to simulated patterns $x,x'\in\RR^2$. The three
+    latent ranking functions $r(x)=||x||^2$ are squared norms. In each
+    case, half of the training data were equality pairs, which are
+    used directly by the comparison model, but are ignored by the
+    ranking model.  We draw the level curves of the learned ranking
+    functions.  It is clear that the comparison model recovers the
+    latent pattern better than the ranking model.}
   \label{fig:norms}
 \end{figure}
 
@@ -555,6 +563,14 @@ We did a simulation in Figure~\ref{fig:norms}.
 
 \section{Conclusions and future work}
 \label{sec:conclusions}
+
+We discussed an extension of SVM to comparison problems. Our results
+highlighted the importance of directly modeling the equality pairs
+($y_i=0$), and it will be interesting to see if the same results are
+observed in learning to rank data sets. For scaling to very large data
+sets, it will be interesting to try algorithms based on smooth
+discriminative loss functions, such as stochastic gradient descent
+with a logistic loss.
 
 \bibliographystyle{abbrvnat}
 \bibliography{refs}

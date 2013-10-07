@@ -182,7 +182,7 @@ for(norm in names(pairs.picked)){
   all.ranks <- rbind(all.ranks, data.frame(rank.df, norm))
 }
 
-simulation <- list(rank=all.ranks, error=unused.error)
+simulation <- list(rank=all.ranks, error=unused.err)
 
 save(simulation, file="simulation.RData")
 
