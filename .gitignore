@@ -11,3 +11,6 @@ auto
 tikzMetrics
 figure-*.tex
 HOCKING-*.pdf
+*.RData
+svm_classify
+svm_learn
