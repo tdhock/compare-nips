@@ -1,4 +1,4 @@
-HOCKING-compare.pdf: HOCKING-compare.tex refs.bib figure-hard-margin.tex figure-simulation-samples.tex
+HOCKING-compare.pdf: HOCKING-compare.tex refs.bib figure-hard-margin.tex figure-simulation.tex
 	rm -f *.aux *.bbl
 	pdflatex HOCKING-compare
 	bibtex HOCKING-compare

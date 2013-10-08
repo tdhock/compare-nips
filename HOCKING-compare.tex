@@ -6,7 +6,7 @@
 \usepackage{array}
 \usepackage{slashbox}
 \usepackage{multirow}
-\usepackage[cm]{fullpage}
+%\usepackage[cm]{fullpage}
 \usepackage{tikz}
 \usepackage{stmaryrd}
 \usepackage{graphicx}
@@ -133,15 +133,13 @@ Section~\ref{sec:conclusions}.
     \backslashbox{Outputs}{Inputs}
     &single items $x$&pairs $x,x'$\\ \hline
     $y\in\{-1,1\}$ &SVM  & SVMrank \citep{ranksvm}   	\\ \hline 
-    $y\in\{-1,0,1\}$ &SVM with reject option \citep{reject-option}& this work\\ \hline
+    $y\in\{-1,0,1\}$ &Reject option \citep{reject-option}& this work\\ \hline
   \end{tabular}
   \caption{\label{tab:related} Summary of related max-margin learning methods.}
 \end{table}
 
-In this section we discuss connections with several existing methods
-in the machine learning literature. Comparison is similar to ranking
-and classification with a reject option (Table~\ref{tab:related}).
-
+Comparison is similar to ranking and classification with a reject
+option (Table~\ref{tab:related}).
 \citet{reject-option} studied the statistical properties of a hinge
 loss for an extension of SVM where $y\in\{-1,0,1\}$, and
 0 signifies ``rejection'' or ``no guess,'' calling this the
@@ -237,9 +235,9 @@ what motivates us to propose a new algorithm.
 
 In this section we discuss new learning algorithms for comparison
 problems. In all cases, we will first learn a ranking function
-$r:\RR^p\rightarrow\RR$ and then make a prediction with the comparison
-function $c$, defined in terms of the threshold function
-$t:\RR\rightarrow\{-1,0,1\}$:
+$r:\RR^p\rightarrow\RR$ and then make a prediction with a comparison
+function $c:\RR^p\times\RR^p\rightarrow\{-1,0,1\}$, defined in terms
+of a threshold function $t:\RR\rightarrow\{-1,0,1\}$:
 \begin{equation}
   \label{eq:compare_threshold}
   c(x, x') =
@@ -259,16 +257,16 @@ $t:\RR\rightarrow\{-1,0,1\}$:
 
 To illustrate the nature of the max-margin comparison problem, in this
 section we assume that the training data are linearly separable. Later
-in Section~\ref{sec:kernelized-qp}, we propose an algorithm for
-learning a nonlinear function from non-separable data.
+in Section~\ref{sec:kernelized-qp}, we discuss how to use the kernel
+trick and a standard SVM solver for learning nonlinear patterns.
 
-In the following linear program (LP), we consider learning a linear
-ranking function $r(x)=w^\intercal x$ that maximizes the geometric
-margin $\mu$. As shown in the left panel of
-Figure~\ref{fig:hard-margin}, the geometric margin $\mu$ is the
-smallest distance from any difference vector $x_i'-x_i$ to a decision
-boundary $r(x)\in\{-1,1\}$. Letting $I_y=\{i\mid y_i=y\}$ be the sets
-of indices for the different labels, the max margin LP is
+Using the following linear program (LP), we learn a linear ranking
+function $r(x)=w^\intercal x$ that maximizes the geometric margin
+$\mu$. As shown in the left panel of Figure~\ref{fig:hard-margin}, the
+geometric margin $\mu$ is the smallest distance from any difference
+vector $x_i'-x_i$ to a decision boundary $r(x)\in\{-1,1\}$. Letting
+$I_y=\{i\mid y_i=y\}$ be the sets of indices for the different labels,
+the max margin LP is
 \begin{equation}
   \label{eq:max-margin-lp}
   \begin{aligned}
@@ -282,7 +280,7 @@ Note that solving this LP is a test of linear separability: if
 the optimal $\mu>0$ then the data are linearly separable. 
 
 \begin{figure*}[b!]
-  \centering
+  \hskip -2cm
   \input{figure-hard-margin}
   \vskip -0.8cm
   \caption{The separable LP and QP comparison problems. \textbf{Left}:
@@ -369,9 +367,9 @@ define the ranking function
     \alpha_i \kappa(\tilde x_i, x) + \alpha_i'  \kappa(\tilde x_i', x).
 \end{equation}
 
-Let $K=[K_1\cdots K_m\ K_1'\cdots K_m']\in\RR^{2m\times 2m}$ be the
-kernel matrix, where the kernel vectors $K_i,K_i'\in\RR^{2m}$ for all
-$i\in\{1, \dots, m\}$.
+% Let $K=[K_1\cdots K_m\ K_1'\cdots K_m']\in\RR^{2m\times 2m}$ be the
+% kernel matrix, where the kernel vectors $K_i,K_i'\in\RR^{2m}$ for all
+% $i\in\{1, \dots, m\}$.
 % \begin{eqnarray}
 %   K_i &=& \left[
 %     \begin{array}{cccccc}
@@ -394,65 +392,61 @@ $i\in\{1, \dots, m\}$.
 %     \end{array}
 %   \right]^\intercal.
 % \end{eqnarray}
-Letting $a=[\alpha^\intercal\
-\alpha'^\intercal]^\intercal\in\RR^{2m}$, the norm of the linear
-function in the feature space is $w^\intercal w = a^\intercal K a$,
-and we can write the primal soft-margin comparison QP for some
-$C\in\RR^+$ as
-\begin{equation}
-  \begin{aligned}
-      \minimize_{a\in\RR^{2m},\xi\in\RR^m,\beta\in\RR}\ \ & 
-      \frac 1 2 a^\intercal K a + C\sum_{i=1}^m \xi_i \\
-      \text{subject to}\ \ & 
-      \text{for all $i\in\{1,\dots,m\}$, }
-      \xi_i \geq 0,\\
-      &\text{and }
-      \xi_i \geq 1-\tilde y_i(\beta + a^\intercal (K_i'-K_i)).
-  \end{aligned}
-\end{equation}
-Let $\lambda, v\in\RR^m$ be the dual variables, let $Y=\Diag(\tilde
-y)$ be the diagonal matrix of $m$ labels. Then the Lagrangian can be
-written as
-\begin{equation}
-  \label{eq:lagrangian}
-  \mathcal L = \frac 1 2 a^\intercal K a + C\xi^\intercal 1_{m}\\
-  -\lambda^\intercal \xi + v^\intercal(1_m - \tilde y\beta - Y M^\intercal K a - \xi),
-\end{equation}
-where $M=[-I_m \, I_m]^\intercal\in\{-1,0,1\}^{2m\times m}$. Solving
-$\nabla_a \mathcal L=0$ results in the following stationary condition:
-\begin{equation}
-  \label{eq:stationarity}
-  a = M Y v.
-\end{equation}
-The rest of the derivation of the dual comparison problem is the same
-as for the standard binary SVM. The resulting dual QP is
-\begin{equation}
-  \begin{aligned}
-    \label{eq:svm-dual}
-    \minimize_{v\in\RR^m}\ \ &
-    \frac 1 2 v^\intercal Y M^\intercal K M Y v - v^\intercal 1_m\\
-    \text{subject to}\ \ &
-    \sum_{i=1}^m v_i \tilde y_i = 0,\\
-&    \text{for all $i\in\{1,\dots,m\}$, } 0\leq v_i\leq C,
-  \end{aligned}
-\end{equation}
-which is equivalent to the dual problem of a standard binary SVM with
-kernel $\tilde K = M^\intercal K M\in\RR^{m\times m}$ and labels
-$\tilde y=\{-1,1\}^m$.
+% Letting $a=[\alpha^\intercal\
+% \alpha'^\intercal]^\intercal\in\RR^{2m}$, the norm of the linear
+% function in the feature space is $w^\intercal w = a^\intercal K a$,
+% and we can write the dual soft-margin comparison QP for some
+% $C\in\RR^+$ as
+% \begin{equation}
+%   \begin{aligned}
+%       \minimize_{a\in\RR^{2m},\xi\in\RR^m,\beta\in\RR}\ \ & 
+%       \frac 1 2 a^\intercal K a + C\sum_{i=1}^m \xi_i \\
+%       \text{subject to}\ \ & 
+%       \text{for all $i\in\{1,\dots,m\}$, }
+%       \xi_i \geq 0,\\
+%       &\text{and }
+%       \xi_i \geq 1-\tilde y_i(\beta + a^\intercal (K_i'-K_i)).
+%   \end{aligned}
+% \end{equation}
+% Let $\lambda, v\in\RR^m$ be the dual variables, let $Y=\Diag(\tilde
+% y)$ be the diagonal matrix of $m$ labels. Then the Lagrangian can be
+% written as
+% \begin{equation}
+%   \label{eq:lagrangian}
+%   \mathcal L = \frac 1 2 a^\intercal K a + C\xi^\intercal 1_{m}\\
+%   -\lambda^\intercal \xi + v^\intercal(1_m - \tilde y\beta - Y M^\intercal K a - \xi),
+% \end{equation}
+% where $M=[-I_m \, I_m]^\intercal\in\{-1,0,1\}^{2m\times m}$. Solving
+% $\nabla_a \mathcal L=0$ results in the following stationary condition:
+% \begin{equation}
+%   \label{eq:stationarity}
+%   a = M Y v.
+% \end{equation}
+% The rest of the derivation of the dual comparison problem is the same
+% as for the standard binary SVM. The resulting dual QP is
+% \begin{equation}
+%   \begin{aligned}
+%     \label{eq:svm-dual}
+%     \minimize_{v\in\RR^m}\ \ &
+%     \frac 1 2 v^\intercal Y M^\intercal K M Y v - v^\intercal 1_m\\
+%     \text{subject to}\ \ &
+%     \sum_{i=1}^m v_i \tilde y_i = 0,\\
+% &    \text{for all $i\in\{1,\dots,m\}$, } 0\leq v_i\leq C,
+%   \end{aligned}
+% \end{equation}
+We then use the same argument as \citet{ranksvm} used to derive the
+SVMrank algorithm. It can be shown that the soft-margin comparison
+problem is equivalent to a standard binary SVM with labels $\tilde
+y=\{-1,1\}^m$ and kernel $\tilde K = M^\intercal K M\in\RR^{m\times
+  m}$, where $M=[-I_m \, I_m]^\intercal\in\{-1,0,1\}^{2m\times m}$.
 
-So we can solve the dual problem (\ref{eq:svm-dual}) using
-any efficient SVM solver, such as libsvm \citep{libsvm}. We used the R
-interface in the \texttt{kernlab} package of \citet{kernlab}, and our
-code is available in the \texttt{rankSVMcompare} package on Github.
-
-After obtaining optimal dual variables $v\in\RR^m$ as the solution of
-(\ref{eq:svm-dual}), the SVM solver also gives us the optimal bias
-$\beta$ by analyzing the complementary slackness conditions.  The
-learned ranking function (\ref{eq:kernelized_r}) can be quickly
-evaluated since the optimal $v$ is sparse.
+So we can solve the comparison problem using any efficient SVM solver,
+such as libsvm \citep{libsvm}. We used the R interface in the
+\texttt{kernlab} package of \citet{kernlab}, and our code is available
+in the \texttt{rankSVMcompare} package on Github.
 
 The overall training procedure has two hyper-parameters to tune: the
-cost $C$ and the kernel $\kappa$. As with standard SVM for binary
+cost $C\in\RR^+$ and the kernel $\kappa$. As with standard SVM for binary
 classification, these parameters can be tuned by minimizing the
 prediction error on a held-out validation set.
 
@@ -532,7 +526,7 @@ from the equality pairs ($y_i=0$).
 
 \begin{figure}[b!]
   \centering
-  \input{figure-simulation-samples}
+  \input{figure-simulation}
   \vskip -0.5cm
   \caption{Application to simulated patterns $x,x'\in\RR^2$. The three
     latent ranking functions $r(x)=||x||^2$ are squared norms. In each
