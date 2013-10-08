@@ -21,7 +21,7 @@ p <- ggplot(not.latent, aes(x1, x2, z=rank))+
   ylab("feature 2")
 print(p)
 
-tikz("figure-simulation.tex", h=2.5)
+tikz("figure-simulation.tex", h=2.8)
 print(p)
 dev.off()
 
