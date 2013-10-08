@@ -105,7 +105,7 @@ pairs of movies I have watched, I would say \textit{Les Mis\'erables}
 is better than \textit{Star Wars}, and \textit{The Empire Strikes
   Back} is as good as \textit{Star Wars}. Features $x_i,x_i'$ of the
 movies can be length in minutes, year of theatrical release,
-indicators for genre, actors, etc.
+indicators for genre, actors/actresses, directors, etc.
 
 The goal of learning is to find a comparison function $c:\RR^p \times
 \RR^p \rightarrow \{-1,0,1\}$ which generalizes to a test set of data:
@@ -126,24 +126,21 @@ Section~\ref{sec:conclusions}.
 \section{Related work}
 \label{sec:related}
 
-First we discuss connections with several existing methods in the
-machine learning literature, and then we discuss how ranking
-algorithms can be applied to the comparison problem. A summary of
-related work appears in Table~\ref{tab:related}.
-
 \begin{table}[b!]
   \centering
   \begin{tabular}{|a|c|c|}\hline
     \rowcolor{lightgray}
     \backslashbox{Outputs}{Inputs}
     &single items $x$&pairs $x,x'$\\ \hline
-    $y\in\{-1,1\}$ &SVM  & SVMrank   	\\ \hline 
-    $y\in\{-1,0,1\}$ &SVM with reject option& this work\\ \hline
+    $y\in\{-1,1\}$ &SVM  & SVMrank \citep{ranksvm}   	\\ \hline 
+    $y\in\{-1,0,1\}$ &SVM with reject option \citep{reject-option}& this work\\ \hline
   \end{tabular}
-  \caption{\label{tab:related} Summary of related max-margin learning methods. 
-    Comparison is similar to ranking 
-    and classification with reject option.}
+  \caption{\label{tab:related} Summary of related max-margin learning methods.}
 \end{table}
+
+In this section we discuss connections with several existing methods
+in the machine learning literature. Comparison is similar to ranking
+and classification with a reject option (Table~\ref{tab:related}).
 
 \citet{reject-option} studied the statistical properties of a hinge
 loss for an extension of SVM where $y\in\{-1,0,1\}$, and
@@ -238,8 +235,8 @@ what motivates us to propose a new algorithm.
 \section{Support vector comparison machines}
 \label{sec:svm-compare}
 
-In this section we new learning algorithms for comparison problems. In
-all cases, we will first learn a ranking function
+In this section we discuss new learning algorithms for comparison
+problems. In all cases, we will first learn a ranking function
 $r:\RR^p\rightarrow\RR$ and then make a prediction with the comparison
 function $c$, defined in terms of the threshold function
 $t:\RR\rightarrow\{-1,0,1\}$:
@@ -517,7 +514,7 @@ $x_i,x_i'\in[-3,3]^2$ and noisy labels
 $y_i=t[r(x'_i)-r(x_i)+\epsilon_i]$, where $t$ is the threshold
 function (\ref{eq:compare_threshold}), $r$ is the latent ranking
 function, and $\epsilon_i\sim N(0, 1/4)$ is noise. We picked one train
-and one validation set, each with 100 equality pairs ($y_i=0$) and 100
+and one validation set, each with 50 equality pairs ($y_i=0$) and 50
 inequality ($y_i\in\{-1,1\}$) pairs, fitting 90 models to the training
 set ($C=4^{-4},\dots,4^5$, gaussian kernel width
 $\gamma=2^{-7},\dots,2^1$). For the SVMrank model, equality pairs are
