@@ -34,6 +34,8 @@ for(norm in names(funs)){
 }
 lapply(pair.sets, with, table(yi))
 ## pairs per set, so N/2 equality and N/2 inequality pairs per set.
+all.ranks <- data.frame()
+unused.err <- data.frame()
 for(N in c(50, 100, 150, 200, 250, 300)){
   for(seed in 1:10){
 ##for(N in c(50, 100)){

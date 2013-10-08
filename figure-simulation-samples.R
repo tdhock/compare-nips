@@ -16,4 +16,6 @@ boring <- ggplot(percents, aes(N, mean, group=fit.name))+
   facet_grid(.~norm)+
   theme_bw()+
   theme(panel.margin=unit(0,"cm"))
+tikz("figure-simulation-samples.tex",h=3)
 print(boring)
+dev.off()
