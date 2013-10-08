@@ -246,6 +246,7 @@ $t:\RR\rightarrow\{-1,0,1\}$:
   t\left[
     r(x')-r(x)
   \right]
+  =
   \begin{cases}
     -1 & \text{if } r(x') - r(x) < -1, \\
     0 & \text{if } |r(x') - r(x)| \leq 1, \\
@@ -262,7 +263,12 @@ in Section~\ref{sec:kernelized-qp}, we propose an algorithm for
 learning a nonlinear function from non-separable data.
 
 In the following linear program (LP), we consider learning a linear
-ranking function $r(x)=w^\intercal x$ that maximizes the margin $\mu$:
+ranking function $r(x)=w^\intercal x$ that maximizes the geometric
+margin $\mu$. As shown in the left panel of
+Figure~\ref{fig:hard-margin}, the geometric margin $\mu$ is the
+smallest distance from any difference vector $x_i'-x_i$ to a decision
+boundary $r(x)\in\{-1,1\}$. Letting $I_y=\{i\mid y_i=y\}$ be the sets
+of indices for the different labels, the max margin LP is
 \begin{equation}
   \label{eq:max-margin-lp}
   \begin{aligned}
@@ -272,16 +278,13 @@ ranking function $r(x)=w^\intercal x$ that maximizes the margin $\mu$:
     &\mu \leq -1 +  w^\intercal(x_i'-x_i)y_i,\ \forall\ i\in I_1\cup I_{-1}.
   \end{aligned}
 \end{equation}
-Note that solving this LP is a test of linear separability. If the
-optimal $\mu>0$ then the data are linearly separable. The geometric
-interpretation of the LP margin is shown in the left panel of
-Figure~\ref{fig:hard-margin}. It is the distance from any difference
-vector $x_i'-x_i$ to its nearest decision boundary $r(x)\in\{-1,1\}$.
+Note that solving this LP is a test of linear separability: if
+the optimal $\mu>0$ then the data are linearly separable. 
 
 \begin{figure*}[b!]
   \centering
   \input{figure-hard-margin}
-  \vskip -0.5cm
+  \vskip -0.8cm
   \caption{The separable LP and QP comparison problems. \textbf{Left}:
     the difference vectors $x'-x$ of the original data and the optimal
     solution to the LP (\ref{eq:max-margin-lp}). \textbf{Middle}: for
@@ -292,13 +295,13 @@ vector $x_i'-x_i$ to its nearest decision boundary $r(x)\in\{-1,1\}$.
   \label{fig:hard-margin}
 \end{figure*}
 
-Instead of solving this LP, we can instead perform a change of
-variables, and then solve a QP to learn a binary SVM. The idea is to
-maximize the margin between significant differences $y_i\in\{-1,1\}$
-and equality pairs $y_i=0$. Let $X_y,X_y'$ be the $|I_y|\times p$
-matrices formed by all the pairs $i\in I_y$. We define a
-``flipped'' data set with $m=|I_1|+|I_{-1}|+2|I_0|$ pairs suitable for
-training a binary SVM:
+A different formulation of the max-margin comparison problem is to
+first perform a change of variables, and then solve a QP to learn a
+binary SVM. The idea is to maximize the margin between significant
+differences $y_i\in\{-1,1\}$ and equality pairs
+$y_i=0$. Let~$X_y,X_y'$~be the $|I_y|\times p$ matrices formed by all
+the pairs $i\in I_y$. We define a ``flipped'' data set with
+$m=|I_1|+|I_{-1}|+2|I_0|$ pairs suitable for training a binary SVM:
 \begin{equation}
 \label{eq:tilde}
   \tilde X = \left[
@@ -367,30 +370,30 @@ define the ranking function
 \end{equation}
 
 Let $K=[K_1\cdots K_m\ K_1'\cdots K_m']\in\RR^{2m\times 2m}$ be the
-kernel matrix, where for all $i\in\{1, \dots, m\}$, the kernel
-vectors $K_i,K_i'\in\RR^{2m}$ are defined as
-\begin{eqnarray}
-  K_i &=& \left[
-    \begin{array}{cccccc}
-      \kappa(\tilde x_1, \tilde x_i)&
-      \cdots&
-      \kappa(\tilde x_m, \tilde x_i)&
-      \kappa(\tilde x_1', \tilde x_i)&
-      \cdots&
-      \kappa(\tilde x_m', \tilde x_i)
-    \end{array}
-  \right]^\intercal \\
-  K_i' &=& \left[
-    \begin{array}{cccccc}
-      \kappa(\tilde x_1, \tilde x_i')&
-      \cdots&
-      \kappa(\tilde x_m, \tilde x_i')&
-      \kappa(\tilde x_1', \tilde x_i')&
-      \cdots&
-      \kappa(\tilde x_m', \tilde x_i')
-    \end{array}
-  \right]^\intercal.
-\end{eqnarray}
+kernel matrix, where the kernel vectors $K_i,K_i'\in\RR^{2m}$ for all
+$i\in\{1, \dots, m\}$.
+% \begin{eqnarray}
+%   K_i &=& \left[
+%     \begin{array}{cccccc}
+%       \kappa(\tilde x_1, \tilde x_i)&
+%       \cdots&
+%       \kappa(\tilde x_m, \tilde x_i)&
+%       \kappa(\tilde x_1', \tilde x_i)&
+%       \cdots&
+%       \kappa(\tilde x_m', \tilde x_i)
+%     \end{array}
+%   \right]^\intercal \\
+%   K_i' &=& \left[
+%     \begin{array}{cccccc}
+%       \kappa(\tilde x_1, \tilde x_i')&
+%       \cdots&
+%       \kappa(\tilde x_m, \tilde x_i')&
+%       \kappa(\tilde x_1', \tilde x_i')&
+%       \cdots&
+%       \kappa(\tilde x_m', \tilde x_i')
+%     \end{array}
+%   \right]^\intercal.
+% \end{eqnarray}
 Letting $a=[\alpha^\intercal\
 \alpha'^\intercal]^\intercal\in\RR^{2m}$, the norm of the linear
 function in the feature space is $w^\intercal w = a^\intercal K a$,
