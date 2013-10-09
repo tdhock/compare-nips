@@ -36,8 +36,9 @@ lapply(pair.sets, with, table(yi))
 ## pairs per set, so N/2 equality and N/2 inequality pairs per set.
 all.ranks <- data.frame()
 unused.err <- data.frame()
-for(N in c(50, 100, 150, 200, 250, 300)){
-  for(seed in 1:10){
+data.list <- list()
+for(N in c(50, 100, 200, 300)){
+  for(seed in 1:4){
 ##for(N in c(50, 100)){
 ##  for(seed in 1:2){
     set.seed(seed)
@@ -60,6 +61,7 @@ for(N in c(50, 100, 150, 200, 250, 300)){
       }
       norm.list[[norm]] <- set.list
     }
+    data.list[[as.character(N)]][[as.character(seed)]] <- norm.list
     ## Plot the points.
     point.df <- data.frame()
     seg.df <- data.frame()
@@ -178,7 +180,7 @@ print(segPlot)
   }
 }
 
-simulation.samples <- list(rank=all.ranks, error=unused.err)
+simulation.samples <- list(rank=all.ranks, error=unused.err, data=data.list)
 
 save(simulation.samples, file="simulation.samples.RData")
 

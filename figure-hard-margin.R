@@ -1,8 +1,10 @@
-works_with_R("3.0.1",rankSVMcompare="2013.9.3",quadmod="2013.8.23",
-             proto="0.3.10")
+works_with_R("3.0.2",rankSVMcompare="2013.9.3",quadmod="2013.8.23",
+             proto="0.3.10", ggplot2="0.9.3.1", tikzDevice="0.6.3")
 
 data(separable)
-source("tikz.R")
+options(tikzDocumentDeclaration="\\documentclass{article}\\usepackage{nips13submit_e,times,amsmath,amssymb,amsthm}\\small",
+        tikzMetricsDictionary="tikzMetricsSmall")
+##source("tikz.R")
 
 only <- 1:50
 one <- with(separable, list(yi=yi[only],Xi=Xi[only,],Xip=Xip[only,]))
@@ -49,6 +51,7 @@ model.segs <- data.frame()
 model.lines <- data.frame()
 model.sv <- data.frame()
 blank.df <- data.frame()
+weights <- list()
 for(set.name in c("one","both","scaled")){
   pairs <- sets[[set.name]]
 
@@ -76,7 +79,7 @@ for(set.name in c("one","both","scaled")){
   d <- rep(0, n.vars)
   d[vars$margin] <- 1
   sol <- run.lpSolveAPI(vars, d, constraints)
-
+  weights[[set.name]] <- sol$weight
   fxdiff <- as.matrix(diffs[,-1]) %*% sol$weight
   thresh <- function(x)ifelse(x>1,1,ifelse(abs(x)<1,0,-1))
   ## check to make sure we have perfect prediction.
@@ -90,12 +93,13 @@ for(set.name in c("one","both","scaled")){
   diffs$constraint <- ifelse(on.margin, "active", "inactive")
 
   slope <- with(sol, -weight[1]/weight[2])
-  linedf <- function(line, intercept){
-    data.frame(slope, intercept, line)
+  linedf <- function(line, rank){
+    intercept <- rank / sol$weight[2]
+    data.frame(slope, intercept, line, rank)
   }
   line.df <-
-    rbind(linedf("decision",c(-1,1)/sol$weight[2]),
-          linedf("margin",(c(-1,1,-1,1)*sol$margin+c(1,1,-1,-1))/sol$weight[2]))
+    rbind(linedf("decision",c(-1,1)),
+          linedf("margin",(c(-1,1,-1,1)*sol$margin+c(1,1,-1,-1))))
 
   dots <- ggplot()+
     geom_point(aes(distance,angle,colour=factor(yi),
@@ -122,7 +126,7 @@ for(set.name in c("one","both","scaled")){
   print(p)
 
   model.points <- rbind(model.points, {
-    data.frame(diffs, set.name)
+    data.frame(diffs, set.name, rank=fxdiff)
   })
   blank.df <- rbind(blank.df, {
     data.frame(rbind(diffs[,2:3], -diffs[,2:3]), set.name, model="compare")
@@ -176,10 +180,29 @@ for(set.name in c("both","scaled")){
   model.segs <- rbind(model.segs, {
     data.frame(seg.df, set.name)
   })
+  slope <- weight[2] / weight[1]
   model.sv <- rbind(model.sv, {
-    data.frame(yi=2, X.sv, constraint="sv", set.name)
+    data.frame(yi=2, X.sv, constraint="sv", set.name, rank=X.sv%*%weight)
   })
 }
+
+## Plot the margin for the LP... is this possible, when the input
+## dimensions are on different scales?
+
+## margin.points <- subset(model.points,set.name=="one" & constraint == "active")
+## decision.lines <- subset(model.lines,set.name=="one" & line=="decision")
+## margin.segs <- data.frame()
+## for(i in 1:nrow(margin.points)){
+##   mp <- margin.points[i,]
+##   decision.rank <-
+##     ifelse(mp$yi==1, 1,
+##            ifelse(mp$yi == -1, -1,
+##                   ifelse(mp$rank < 0, -1, 1)))
+##   d <- subset(decision.lines, rank==decision.rank)
+##   x <- (mp$dist + (mp$ang - d$intercept)*d$slope)/(d$slope+1)
+##   y <- d$slope*x + d$int
+##   margin.segs <- rbind(margin.segs, data.frame(mp, x, y))
+## }
 
 plotted.points <- rbind(model.points, model.sv)
 qp <- data.frame(x=200,y=3,label="QP",set.name="both")
@@ -188,8 +211,11 @@ mplot <- ggplot()+
   geom_abline(aes(slope=slope,intercept=intercept,linetype=line),
               data=model.lines, size=1, color=lp.color)+
   geom_segment(aes(distance1,angle1,xend=distance2,yend=angle2,
-                    linetype=line),data=model.segs,
-               colour=svm.color, size=0.8)+
+                   linetype=line),data=model.segs,
+                colour=svm.color, size=0.8)+
+  ## geom_abline(aes(slope=slope,intercept=intercept),
+  ##             data=data.frame(slope=-1/slope,intercept=0))+
+  ## geom_segment(aes(distance,angle,xend=x,yend=y),data=margin.segs)+
   geom_blank(aes(distance, angle),data=blank.df)+
   geom_text(aes(x,y,label=label),data=qp,colour=svm.color,size=3)+
   geom_text(aes(x,y,label=label),data=lp,colour=lp.color,size=3)+
@@ -217,8 +243,11 @@ mplot <- ggplot()+
   ##geom_point(aes(distance, angle), data=model.sv, size=1, pch=1)+
   theme(panel.margin=unit(0,"cm"))+
   xlab("difference feature 1")+
+  ## geom_segment(aes(x,y,xend=xend,yend=yend),
+  ##              data=data.frame(x=0,y=0,xend=w[1],yend=w[2]),
+  ##              arrow=arrow(type="closed",length=unit(0.1,"cm")))+
   ylab("difference feature 2")
 
-tikz("figure-hard-margin.tex",h=2.8, w=7.5)
+tikz("figure-hard-margin.tex",h=2.75, w=7)
 print(mplot)
 dev.off()

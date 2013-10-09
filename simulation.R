@@ -1,4 +1,5 @@
-works_with_R("3.0.2", rankSVMcompare="2013.9.3", ggplot2="0.9.3.1")
+works_with_R("3.0.2", rankSVMcompare="2013.9.3", ggplot2="0.9.3.1",
+             microbenchmark="1.3.0")
 
 source("svmlight.R")
 
@@ -117,6 +118,10 @@ for(norm in names(pairs.picked)){
     ##ker <- laplacedot(k.width)
     cat(sprintf("%4d / %4d C=%5.2f k.width=%5.2f\n",
                 model.i, nrow(model.df), Cval, k.width))
+    ## softCompareQP(Pairs.train, ker, C=Cval,cache=4000)
+    ## microbenchmark(cache40=softCompareQP(Pairs.train, ker, C=Cval,cache=40),
+    ##                cache400=softCompareQP(Pairs.train, ker, C=Cval,cache=4000),
+    ##                times=10)
     fits <- list(compare=softCompareQP(Pairs.train, ker, C=Cval),
                  rank=svmlight(Pairs.train, Cval, k.width))
     models[[model.i]] <- fits
