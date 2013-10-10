@@ -94,12 +94,13 @@ for(set.name in c("one","both","scaled")){
   diffs$constraint <- ifelse(on.margin, "active", "inactive")
 
   slope <- with(sol, -weight[1]/weight[2])
-  linedf <- function(line, intercept){
-    data.frame(slope, intercept, line)
+  linedf <- function(line, rank){
+    intercept <- rank/sol$weight[2]
+    data.frame(slope, intercept, rank, line)
   }
   line.df <-
-    rbind(linedf("decision",c(-1,1)/sol$weight[2]),
-          linedf("margin",(c(-1,1,-1,1)*sol$margin+c(1,1,-1,-1))/sol$weight[2]))
+    rbind(linedf("decision",c(-1,1)),
+          linedf("margin",(c(-1,1,-1,1)*sol$margin+c(1,1,-1,-1))))
 
   dots <- ggplot()+
     geom_point(aes(distance,angle,colour=factor(yi),
@@ -227,12 +228,15 @@ mplot <- ggplot()+
 print(mplot)
 
 ## 3d code.
-bad <- subset(model.points, set.name=="both")
+set.name <- "both"
+set.name <- "scaled"
+bad <- model.points[model.points$set.name==set.name,]
 with(bad, plot3d(distance,angle,0,col=yi.colors[as.character(yi)],
                  xlab="feature 1", ylab="feature 2", zlab="rank"))
+rgl.light(100,0,0)
 X <- as.matrix(bad[,2:3])
-bad$rank.lp <- X %*% lp.weights$both
-bad$rank.qp <- X %*% qp.weights$both
+bad$rank.lp <- X %*% lp.weights[[set.name]]
+bad$rank.qp <- X %*% qp.weights[[set.name]]
 boundary <- function(rank, yi){
   ifelse(yi==1, 1,
          ifelse(yi==-1, -1,
@@ -248,16 +252,25 @@ x2 <- c(m2,M2,M2,m2)
 mat <- cbind(x1,x2)
 drawPlane <- function(col, fun){
   fx <- apply(mat,1,fun)
-  quads3d(x1,x2,fx, col=col)
+  quads3d(x1,x2,fx, col=col, alpha=1/2)
 }
-drawPlane("grey",function(x)sum(lp.weights$both * x))
 
-##drawPlane("black",function(x)sum(qp.weights$both * x))
+## Draw LP ranking function.
+lp.plane.id <- drawPlane("white",function(x)sum(lp.weights[[set.name]] * x))
+
+
+## Draw decision boundaries.
 drawPlane("blue",function(x)1)
 drawPlane("blue",function(x)-1)
-with(bad, points3d(distance,angle,rank.lp,
+
+
+## Map the points onto the linear function to obtain the rank.
+lp.point.id <- with(bad, points3d(distance,angle,rank.lp,
                    color=yi.colors[as.character(yi)]))
 active <- subset(bad, constraint=="active")
+
+
+## Show the margin for the 5 border points.
 with(active, {
   segments3d(rbind(distance, distance),
              rbind(angle, angle),
@@ -265,6 +278,17 @@ with(active, {
              col=yi.colors[as.character(rbind(yi, yi))],
              lwd=2)
 })
+
+
+
+rgl.pop("shapes",lp.point.id)
+##rgl.light(0,0,0)
+drawPlane("black",function(x)sum(qp.weights[[set.name]] * x))
+with(bad, points3d(distance,angle,rank.qp,
+                   color=yi.colors[as.character(yi)]))
+
+
+rgl.pop("shapes",lp.plane.id)
 ## open3d()
 ## toplot <- is.finite(L[,2])
 ## points3d(X[toplot,1],X[toplot,2],L[toplot,2],color="red")
@@ -273,3 +297,21 @@ with(active, {
 ##            t(L),col="grey")
 
 
+w <- qp.weights[[set.name]]
+m <- -w[1]/w[2] #slope of dec boundary
+b <- 1/w[2] #intercept
+margin.segs <- data.frame()
+for(i in 1:nrow(active)){
+  mp <- active[i,]
+  x <- (mp$dist + (mp$ang - b)*m)/(m+1)
+  y <- m*x + b
+  margin.segs <- rbind(margin.segs, data.frame(mp, x, y))
+}
+## TODO: draw lines from qp sv's to dec boundary!
+with(margin.segs, {
+  segments3d(rbind(distance, x),
+             rbind(angle, y),
+             t(cbind(rank.lp, boundary.lp)),
+             col=yi.colors[as.character(rbind(yi, yi))],
+             lwd=2)
+})
