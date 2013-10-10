@@ -10,6 +10,9 @@ funs <- list(l2=function(x)rowSums(x*x),
 size.list <- simulation.samples$data
 err <- simulation.samples$err
 rank.df <- simulation.samples$rank
+keep <- seq(-2, 2, by=0.2)
+is.ok <- with(rank.df, x1 %in% keep & x2 %in% keep)
+rank.df <- rank.df[is.ok,]
 err$percent <- err$error / err$count * 100
 err$set.id <- NA
 ## sets of training data and bayes error on test data.
