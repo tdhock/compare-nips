@@ -107,6 +107,9 @@ for(model in c("compare", "rank")){
 }
 gg2animint(curves, "interactive-both")
 ## Show rank or compare model on ground truth level curves.
+xl <- xlab("feature 1")
+yl <- ylab("feature 2")
+x.lab <- "number of labeled pairs in the training set"
 dots <-
   list(data=ggplot()+
        geom_segment(aes(Xt.1, Xt.2, xend=Xtp.1, yend=Xtp.2, colour=factor(yt),
@@ -116,6 +119,7 @@ dots <-
                       showSelected=set.id),
                   data=subset(train.df, yt==1))+
        scale_colour_manual("label",values=c("1"="red","-1"="black"))+
+       xl+yl+
        ggtitle("training data"),
        error=ggplot()+
        make_text(err, 200, 35, "norm")+
@@ -125,7 +129,7 @@ dots <-
                  lwd=3,alpha=3/4,data=err)+
        ylab("percent incorrectly predicted test pairs")+
        scale_colour_manual("model", values=model.colors)+
-       xlab("number of labeled pairs in the training set")+
+       xlab(x.lab)+
        ggtitle("test error, select data set"),
        diff=ggplot()+
        geom_ribbon(aes(N, ymin=mean-sd, ymax=mean+sd, group=norm,
@@ -137,13 +141,15 @@ dots <-
        geom_text(aes(x,y,label=label),color="red",
                  data=data.frame(x=150,y=1,label="no difference"))+
        ggtitle("test error difference, select norm")+
-       ylab("<- compare better (difference of model test error) rank better->"))
+       xlab(x.lab)+
+       ylab("<- compare better (test error percent difference) rank better->"))
 for(model in c("compare", "rank")){
   sub.df <- subset(rank.df, what %in% c(model, "latent"))
   L <- list(ggplot()+
     geom_contour(aes(x1, x2, z=rank, group=interaction(what, norm, seed, N),
                      colour=what, showSelected=set.id), data=sub.df)+
     scale_colour_manual("model",values=model.colors)+
+            xl+yl+
     ggtitle(sprintf("learned SVM%s model",model)))
   names(L) <- model
   dots <- c(dots, L)
