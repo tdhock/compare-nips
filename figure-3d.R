@@ -1,11 +1,8 @@
 works_with_R("3.0.2",rankSVMcompare="2013.9.3",quadmod="2013.8.23",
-             proto="0.3.10", ggplot2="0.9.3.1", tikzDevice="0.6.3",
+             ggplot2="0.9.3.1", 
              rgl="0.93.984")
 
 data(separable)
-options(tikzDocumentDeclaration="\\documentclass{article}\\usepackage{nips13submit_e,times,amsmath,amssymb,amsthm}\\small",
-        tikzMetricsDictionary="tikzMetricsSmall")
-##source("tikz.R")
 
 only <- 1:50
 one <- with(separable, list(yi=yi[only],Xi=Xi[only,],Xip=Xip[only,]))
