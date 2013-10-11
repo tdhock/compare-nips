@@ -110,6 +110,9 @@ gg2animint(curves, "interactive-both")
 xl <- xlab("feature 1")
 yl <- ylab("feature 2")
 x.lab <- "number of labeled pairs in the training set"
+ord <- c("latent","compare","rank")
+bayes.df$model <- factor("latent",ord)
+err$fit.name <- factor(err$fit.name, ord)
 dots <-
   list(data=ggplot()+
        geom_segment(aes(Xt.1, Xt.2, xend=Xtp.1, yend=Xtp.2, colour=factor(yt),
@@ -123,12 +126,16 @@ dots <-
        ggtitle("training data"),
        error=ggplot()+
        make_text(err, 200, 35, "norm")+
+       geom_point(aes(as.integer(as.character(N)), percent, colour=model,
+                      showSelected=norm, showSelected2=set.id),
+                  data=bayes.df)+
        geom_point(aes(N, percent, colour=fit.name,
                       showSelected=norm,
                       clickSelects=set.id),
                  lwd=3,alpha=3/4,data=err)+
        ylab("percent incorrectly predicted test pairs")+
-       scale_colour_manual("model", values=model.colors)+
+       scale_colour_manual("model", values=c(model.colors[1:2],latent="black"),
+                           breaks=ord)+
        xlab(x.lab)+
        ggtitle("test error, select data set"),
        diff=ggplot()+
