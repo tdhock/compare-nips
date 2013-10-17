@@ -59,7 +59,7 @@ makeLine <- function(z, qid, x){
 }
 
 makeLines <- function(Xi, zi, Xip, zip, plines){
-  first.qid <- length(plines)/2 + 1
+  first.qid <- length(plines) + 1
   last.qid <- first.qid + length(Xi) - 1
   qid <- first.qid:last.qid
   m <- cbind(makeLine(zi, qid, Xi),
